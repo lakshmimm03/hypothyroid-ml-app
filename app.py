@@ -100,26 +100,26 @@ def predict():
 
         result_text = "Hypothyroid Detected" if prediction == 1 else "No Hypothyroid"
 
+        # SAVE TO DATABASE
         new_prediction = Prediction(
-            age=age,
-            tsh=TSH,
-            t3=T3,
-            tt4=TT4,
-            t4u=T4U,
-            fti=FTI,
-            result=result_text,
-            probability=round(prob * 100, 2)
-        )
+            age=float(age),
+            tsh=float(TSH),
+            t3=float(T3),
+            tt4=float(TT4),
+            t4u=float(T4U),
+            fti=float(FTI),
+            result=str(result_text),
+            probability=float(round(float(prob) * 100, 2))
+            )
 
         db.session.add(new_prediction)
         db.session.commit()
-
         return render_template(
             "result.html",
             result=result_text,
-            probability=round(prob * 100, 2),
+            probability=float(round(float(prob) * 100, 2)),
             explanations=explanations
-        )
+            )
 
     except Exception as e:
         return render_template("result.html", result=f"Error: {str(e)}")
