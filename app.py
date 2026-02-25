@@ -1,3 +1,4 @@
+from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import csv
 from flask import Flask, render_template, request, redirect, session, Response
@@ -22,6 +23,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 # ---------------- DATABASE MODEL ----------------
+# ---------------- DATABASE MODELS ----------------
+
 class Prediction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     age = db.Column(db.Float)
@@ -33,8 +36,13 @@ class Prediction(db.Model):
     result = db.Column(db.String(50))
     probability = db.Column(db.Float)
 
-with app.app_context():
-    db.create_all()
+
+class Doctor(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)
+    with app.app_context():
+        db.create_all()
 
 # ---------------- LOAD MODEL ----------------
 model = joblib.load("model.pkl")
@@ -46,13 +54,28 @@ def login():
         username = request.form["username"]
         password = request.form["password"]
 
-        if username == "doctor" and password == "1234":
-            session["user"] = username
+        doctor = Doctor.query.filter_by(username=username).first()
+
+        if doctor and check_password_hash(doctor.password, password):
+            session["user"] = doctor.id
             return redirect("/")
-        else:
-            return "Invalid Credentials"
+
+        return "Invalid Credentials"
 
     return render_template("login.html")
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = generate_password_hash(request.form["password"])
+
+        new_doctor = Doctor(username=username, password=password)
+        db.session.add(new_doctor)
+        db.session.commit()
+
+        return redirect("/login")
+
+    return render_template("register.html")
 
 # ---------------- HOME ROUTE ----------------
 @app.route("/")
