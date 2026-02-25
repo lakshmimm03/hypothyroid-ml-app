@@ -102,15 +102,15 @@ def predict():
 
         # SAVE TO DATABASE
         new_prediction = Prediction(
-            age=age,
-            tsh=TSH,
-            t3=T3,
-            tt4=TT4,
-            t4u=T4U,
-            fti=FTI,
+            age=float(age),
+            tsh=float(TSH),
+            t3=float(T3),
+            tt4=float(TT4),
+            t4u=float(T4U),
+            fti=float(FTI),
             result=result_text,
-            probability=round(prob * 100, 2)
-        )
+            probability=float(round(prob * 100, 2))
+            )
 
         db.session.add(new_prediction)
         db.session.commit()
@@ -118,7 +118,7 @@ def predict():
         return render_template(
             "result.html",
             result=result_text,
-            probability=round(prob * 100, 2),
+            probability=float(prob * 100),
             explanations=explanations
         )
 
