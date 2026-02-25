@@ -1,3 +1,9 @@
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from flask import send_file
+import io
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import csv
@@ -8,7 +14,7 @@ import numpy as np
 
 # ---------------- APP INITIALIZATION ----------------
 app = Flask(__name__)
-app.secret_key = "your_secret_key"
+app.secret_key = os.environ.get("SECRET_KEY")
 
 # ---------------- DATABASE CONFIG ----------------
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL")
@@ -27,13 +33,15 @@ class Prediction(db.Model):
     fti = db.Column(db.Float)
     result = db.Column(db.String(50))
     probability = db.Column(db.Float)
-
+with app.app_context():
+    db.create_all()
 
 class Doctor(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
-
+with app.app_context():
+    db.create_all()
 
 # ✅ CREATE TABLES (CORRECT PLACE)
 with app.app_context():
@@ -174,7 +182,45 @@ def export():
         mimetype="text/csv",
         headers={"Content-Disposition": "attachment;filename=predictions.csv"}
     )
+@app.route("/download/<int:id>")
+def download_pdf(id):
+    if "user" not in session:
+        return redirect("/login")
 
+    prediction = Prediction.query.get_or_404(id)
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    elements = []
+    styles = getSampleStyleSheet()
+
+    elements.append(Paragraph("ThyroPredict Medical Report", styles["Title"]))
+    elements.append(Spacer(1, 20))
+
+    data = [
+        ["Age", prediction.age],
+        ["TSH", prediction.tsh],
+        ["T3", prediction.t3],
+        ["TT4", prediction.tt4],
+        ["T4U", prediction.t4u],
+        ["FTI", prediction.fti],
+        ["Result", prediction.result],
+        ["Probability", f"{prediction.probability}%"]
+    ]
+
+    table = Table(data)
+    elements.append(table)
+
+    doc.build(elements)
+
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=f"thyropredict_report_{id}.pdf",
+        mimetype="application/pdf"
+    )
 
 # ---------------- TEST ROUTE ----------------
 @app.route("/test")
