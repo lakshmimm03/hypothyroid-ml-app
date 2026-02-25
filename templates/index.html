@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hypothyroid Prediction</title>
+</head>
+<body>
+    <h2>Hypothyroid Disease Prediction System</h2>
+
+    <form action="/predict" method="post">
+
+        Age: <input type="text" name="age"><br><br>
+        TSH: <input type="text" name="TSH"><br><br>
+        T3: <input type="text" name="T3"><br><br>
+        TT4: <input type="text" name="TT4"><br><br>
+        T4U: <input type="text" name="T4U"><br><br>
+        FTI: <input type="text" name="FTI"><br><br>
+
+        <input type="submit" value="Predict">
+    </form>
+
+    <h3>{{ prediction_text }}</h3>
+
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Prediction Result</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="container">
+
+    <h2>Prediction Result</h2>
+
+    <h3 class="result-text 
+    {% if 'Detected' in result %} danger 
+    {% else %} success 
+    {% endif %}">
+        {{ result }}
+    </h3>
+
+    {% if probability is defined %}
+        <h4>Risk Probability: {{ probability }}%</h4>
+    {% endif %}
+
+    {% if explanations %}
+        <h4>Feature Contribution:</h4>
+        <ul>
+            {% for item in explanations %}
+                <li>{{ item }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if probability is defined %}
+        <div class="shap-container">
+            <img src="{{ url_for('static', filename='shap.png') }}">
+        </div>
+    {% endif %}
+
+    <br>
+    <a href="/">Go Back</a> |
+    <a href="/logout">Logout</a>
+
+</div>
+
+</body>
+</html>

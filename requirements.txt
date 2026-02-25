@@ -1,0 +1,7 @@
+Flask
+numpy
+joblib
+shap
+matplotlib
+reportlab
+scikit-learn

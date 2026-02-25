@@ -1,0 +1,92 @@
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #4e73df, #1cc88a);
+    text-align: center;
+    color: white;
+    margin: 0;
+    padding: 0;
+}
+
+/* Main Card Container */
+.container {
+    background: white;
+    color: black;
+    width: 900px;
+    max-width: 95%;
+    margin: 50px auto;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+/* Inputs */
+input {
+    width: 90%;
+    padding: 10px;
+    margin: 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+}
+
+/* Button */
+button {
+    background: #4e73df;
+    color: white;
+    padding: 12px;
+    border: none;
+    width: 95%;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+    transition: 0.3s ease;
+}
+
+button:hover {
+    background: #2e59d9;
+}
+
+/* Result text */
+.result-text {
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+/* Feature list */
+ul {
+    text-align: left;
+    display: inline-block;
+    margin-top: 15px;
+    padding-left: 20px;
+}
+
+/* SHAP Graph Container */
+.shap-container {
+    margin-top: 30px;
+    overflow-x: auto;
+}
+
+.shap-container img {
+    width: 100%;
+    max-width: 850px;
+    display: block;
+    margin: auto;
+}
+
+/* Back link */
+a {
+    color: #4e73df;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+.danger {
+    color: #e74a3b;
+}
+
+.success {
+    color: #1cc88a;
+}
