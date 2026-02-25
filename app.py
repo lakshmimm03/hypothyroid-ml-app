@@ -5,12 +5,6 @@ from flask import Flask, render_template, request, redirect, session, Response
 from flask_sqlalchemy import SQLAlchemy
 import joblib
 import numpy as np
-import shap
-
-# IMPORTANT: Set matplotlib backend BEFORE importing pyplot
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 
 # ---------------- APP INITIALIZATION ----------------
 app = Flask(__name__)
@@ -22,9 +16,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# ---------------- DATABASE MODEL ----------------
 # ---------------- DATABASE MODELS ----------------
-
 class Prediction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     age = db.Column(db.Float)
@@ -41,11 +33,32 @@ class Doctor(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
-    with app.app_context():
-        db.create_all()
+
+
+# ✅ CREATE TABLES (CORRECT PLACE)
+with app.app_context():
+    db.create_all()
+
 
 # ---------------- LOAD MODEL ----------------
 model = joblib.load("model.pkl")
+
+
+# ---------------- REGISTER ROUTE ----------------
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = generate_password_hash(request.form["password"])
+
+        new_doctor = Doctor(username=username, password=password)
+        db.session.add(new_doctor)
+        db.session.commit()
+
+        return redirect("/login")
+
+    return render_template("register.html")
+
 
 # ---------------- LOGIN ROUTE ----------------
 @app.route("/login", methods=["GET", "POST"])
@@ -63,24 +76,13 @@ def login():
         return "Invalid Credentials"
 
     return render_template("login.html")
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    if request.method == "POST":
-        username = request.form["username"]
-        password = generate_password_hash(request.form["password"])
 
-        new_doctor = Doctor(username=username, password=password)
-        db.session.add(new_doctor)
-        db.session.commit()
-
-        return redirect("/login")
-
-    return render_template("register.html")
 
 # ---------------- HOME ROUTE ----------------
 @app.route("/")
 def home():
     return render_template("index.html")
+
 
 # ---------------- PREDICTION ROUTE ----------------
 @app.route("/predict", methods=["POST"])
@@ -98,63 +100,39 @@ def predict():
         prediction = model.predict(features)[0]
         prob = model.predict_proba(features)[0][1]
 
-        explainer = shap.TreeExplainer(model)
-        shap_values = explainer(features)
-
-        values = shap_values.values[0, :, 1]
-        feature_names = ["age", "TSH", "T3", "TT4", "T4U", "FTI"]
-
-        explanations = []
-        for i in range(len(feature_names)):
-            val = float(values[i])
-            if val > 0:
-                explanations.append(f"{feature_names[i]} increased risk")
-            elif val < 0:
-                explanations.append(f"{feature_names[i]} reduced risk")
-
-        if not os.path.exists("static"):
-            os.makedirs("static")
-
-        fig = plt.figure(figsize=(8, 5))
-        shap.plots.waterfall(shap_values[0, :, 1], show=False)
-        plt.tight_layout()
-        fig.savefig("static/shap.png", bbox_inches="tight")
-        plt.close(fig)
-
         result_text = "Hypothyroid Detected" if prediction == 1 else "No Hypothyroid"
 
         # SAVE TO DATABASE
         new_prediction = Prediction(
-            age=float(age),
-            tsh=float(TSH),
-            t3=float(T3),
-            tt4=float(TT4),
-            t4u=float(T4U),
-            fti=float(FTI),
-            result=str(result_text),
-            probability=float(round(float(prob) * 100, 2))
-            )
+            age=age,
+            tsh=TSH,
+            t3=T3,
+            tt4=TT4,
+            t4u=T4U,
+            fti=FTI,
+            result=result_text,
+            probability=float(round(prob * 100, 2))
+        )
 
         db.session.add(new_prediction)
         db.session.commit()
+
         return render_template(
             "result.html",
             result=result_text,
-            probability=float(round(float(prob) * 100, 2)),
-            explanations=explanations
-            )
+            probability=float(round(prob * 100, 2))
+        )
 
     except Exception as e:
         return render_template("result.html", result=f"Error: {str(e)}")
 
+
 # ---------------- HISTORY ROUTE ----------------
 @app.route("/history")
 def history():
-    # 🔐 Admin Protection
     if "user" not in session:
         return redirect("/login")
 
-    # 📄 Pagination Settings
     page = request.args.get('page', 1, type=int)
     per_page = 5
 
@@ -162,7 +140,6 @@ def history():
         Prediction.id.desc()
     ).paginate(page=page, per_page=per_page)
 
-    # 📊 Summary Statistics
     total = Prediction.query.count()
     positive = Prediction.query.filter(
         Prediction.result.contains("Detected")
@@ -177,6 +154,7 @@ def history():
         positive=positive,
         negative=negative
     )
+
 
 # ---------------- EXPORT CSV ROUTE ----------------
 @app.route("/export")
@@ -197,10 +175,12 @@ def export():
         headers={"Content-Disposition": "attachment;filename=predictions.csv"}
     )
 
+
 # ---------------- TEST ROUTE ----------------
 @app.route("/test")
 def test():
     return "Test route working"
+
 
 # ---------------- RUN APP ----------------
 if __name__ == "__main__":
