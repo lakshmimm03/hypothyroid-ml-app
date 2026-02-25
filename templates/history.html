@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Prediction History</title>
+    <style>
+        body { font-family: Arial; background: #f4f4f4; }
+        table { border-collapse: collapse; width: 90%; margin: 30px auto; background: white; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: center; }
+        th { background: #2c3e50; color: white; }
+        h2 { text-align: center; }
+    </style>
+</head>
+<body>
+
+<h2>Prediction History</h2>
+
+<table>
+    <tr>
+        <th>ID</th>
+        <th>Age</th>
+        <th>TSH</th>
+        <th>T3</th>
+        <th>TT4</th>
+        <th>T4U</th>
+        <th>FTI</th>
+        <th>Result</th>
+        <th>Probability (%)</th>
+    </tr>
+
+    {% for p in predictions %}
+    <tr>
+        <td>{{ p.id }}</td>
+        <td>{{ p.age }}</td>
+        <td>{{ p.tsh }}</td>
+        <td>{{ p.t3 }}</td>
+        <td>{{ p.tt4 }}</td>
+        <td>{{ p.t4u }}</td>
+        <td>{{ p.fti }}</td>
+        <td>{{ p.result }}</td>
+        <td>{{ p.probability }}</td>
+    </tr>
+    {% endfor %}
+
+</table>
+
+</body>
+</html>

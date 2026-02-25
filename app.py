@@ -132,6 +132,10 @@ def predict():
             "result.html",
             result=f"Error: {str(e)}"
         )
+    @app.route("/history")
+    def history():
+        all_predictions = Prediction.query.order_by(Prediction.id.desc()).all()
+        return render_template("history.html", predictions=all_predictions)
 
 # ---------------- RUN APP ----------------
 if __name__ == "__main__":
