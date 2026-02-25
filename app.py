@@ -1,5 +1,6 @@
 import os
-from flask import Flask, render_template, request, redirect, session
+import csv
+from flask import Flask, render_template, request, redirect, session, Response
 from flask_sqlalchemy import SQLAlchemy
 import joblib
 import numpy as np
@@ -32,7 +33,6 @@ class Prediction(db.Model):
     result = db.Column(db.String(50))
     probability = db.Column(db.Float)
 
-# Create tables
 with app.app_context():
     db.create_all()
 
@@ -100,17 +100,16 @@ def predict():
 
         result_text = "Hypothyroid Detected" if prediction == 1 else "No Hypothyroid"
 
-        # SAVE TO DATABASE
         new_prediction = Prediction(
-            age=float(age),
-            tsh=float(TSH),
-            t3=float(T3),
-            tt4=float(TT4),
-            t4u=float(T4U),
-            fti=float(FTI),
+            age=age,
+            tsh=TSH,
+            t3=T3,
+            tt4=TT4,
+            t4u=T4U,
+            fti=FTI,
             result=result_text,
-            probability=float(round(prob * 100, 2))
-            )
+            probability=round(prob * 100, 2)
+        )
 
         db.session.add(new_prediction)
         db.session.commit()
@@ -118,22 +117,62 @@ def predict():
         return render_template(
             "result.html",
             result=result_text,
-            probability=float(prob * 100),
+            probability=round(prob * 100, 2),
             explanations=explanations
         )
 
     except Exception as e:
-        return render_template(
-            "result.html",
-            result=f"Error: {str(e)}"
-        )
+        return render_template("result.html", result=f"Error: {str(e)}")
 
-# ---------------- HISTORY ROUTE (CORRECT PLACE) ----------------
+# ---------------- HISTORY ROUTE ----------------
 @app.route("/history")
 def history():
-    all_predictions = Prediction.query.order_by(Prediction.id.desc()).all()
-    return render_template("history.html", predictions=all_predictions)
+    # 🔐 Admin Protection
+    if "user" not in session:
+        return redirect("/login")
 
+    # 📄 Pagination Settings
+    page = request.args.get('page', 1, type=int)
+    per_page = 5
+
+    pagination = Prediction.query.order_by(
+        Prediction.id.desc()
+    ).paginate(page=page, per_page=per_page)
+
+    # 📊 Summary Statistics
+    total = Prediction.query.count()
+    positive = Prediction.query.filter(
+        Prediction.result.contains("Detected")
+    ).count()
+    negative = total - positive
+
+    return render_template(
+        "history.html",
+        predictions=pagination.items,
+        pagination=pagination,
+        total=total,
+        positive=positive,
+        negative=negative
+    )
+
+# ---------------- EXPORT CSV ROUTE ----------------
+@app.route("/export")
+def export():
+    if "user" not in session:
+        return redirect("/login")
+
+    predictions = Prediction.query.all()
+
+    def generate():
+        yield "ID,Age,TSH,T3,TT4,T4U,FTI,Result,Probability\n"
+        for p in predictions:
+            yield f"{p.id},{p.age},{p.tsh},{p.t3},{p.tt4},{p.t4u},{p.fti},{p.result},{p.probability}\n"
+
+    return Response(
+        generate(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment;filename=predictions.csv"}
+    )
 
 # ---------------- TEST ROUTE ----------------
 @app.route("/test")
