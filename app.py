@@ -134,6 +134,12 @@ def history():
     all_predictions = Prediction.query.order_by(Prediction.id.desc()).all()
     return render_template("history.html", predictions=all_predictions)
 
+
+# ---------------- TEST ROUTE ----------------
+@app.route("/test")
+def test():
+    return "Test route working"
+
 # ---------------- RUN APP ----------------
 if __name__ == "__main__":
     app.run(debug=True)
