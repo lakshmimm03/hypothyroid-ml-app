@@ -63,7 +63,6 @@ def home():
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
-        # 1️⃣ Get form input
         age = float(request.form["age"])
         TSH = float(request.form["TSH"])
         T3 = float(request.form["T3"])
@@ -73,11 +72,9 @@ def predict():
 
         features = np.array([[age, TSH, T3, TT4, T4U, FTI]])
 
-        # 2️⃣ Model Prediction
         prediction = model.predict(features)[0]
         prob = model.predict_proba(features)[0][1]
 
-        # 3️⃣ SHAP Explanation
         explainer = shap.TreeExplainer(model)
         shap_values = explainer(features)
 
@@ -92,7 +89,6 @@ def predict():
             elif val < 0:
                 explanations.append(f"{feature_names[i]} reduced risk")
 
-        # 4️⃣ Save SHAP Plot
         if not os.path.exists("static"):
             os.makedirs("static")
 
@@ -102,10 +98,9 @@ def predict():
         fig.savefig("static/shap.png", bbox_inches="tight")
         plt.close(fig)
 
-        # 5️⃣ Result Text
         result_text = "Hypothyroid Detected" if prediction == 1 else "No Hypothyroid"
 
-        # 6️⃣ SAVE TO DATABASE ✅
+        # SAVE TO DATABASE
         new_prediction = Prediction(
             age=age,
             tsh=TSH,
@@ -132,10 +127,12 @@ def predict():
             "result.html",
             result=f"Error: {str(e)}"
         )
-    @app.route("/history")
-    def history():
-        all_predictions = Prediction.query.order_by(Prediction.id.desc()).all()
-        return render_template("history.html", predictions=all_predictions)
+
+# ---------------- HISTORY ROUTE (CORRECT PLACE) ----------------
+@app.route("/history")
+def history():
+    all_predictions = Prediction.query.order_by(Prediction.id.desc()).all()
+    return render_template("history.html", predictions=all_predictions)
 
 # ---------------- RUN APP ----------------
 if __name__ == "__main__":
